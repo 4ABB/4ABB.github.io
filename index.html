@@ -24,6 +24,17 @@
       --col-default: #888;
       --col-gf: #ff69b4; 
       --col-developer: #00e6ff; 
+      
+      /* New Custom YAMA Colors */
+      --col-yama-start: #220000;
+      --col-yama-end: #880000;
+      --col-yama-text: #ffaaaa;
+    }
+
+    /* Keyframe for the YAMA role glow */
+    @keyframes yamaGlow {
+      from { text-shadow: 0 0 3px var(--col-yama-text), 0 0 6px rgba(255, 0, 0, 0.5); }
+      to { text-shadow: 0 0 6px var(--col-yama-text), 0 0 12px rgba(255, 0, 0, 0.8); }
     }
 
     *{box-sizing:border-box}
@@ -205,6 +216,7 @@
       box-shadow: 0 0 8px currentColor;
     }
 
+    /* Standard Roles */
     .role-owner {
       background: linear-gradient(145deg, #222, #000);
       color: var(--col-owner);
@@ -238,6 +250,17 @@
       font-style: italic;
       font-weight: 900;
     }
+
+    /* Custom YAMA Role Styling */
+    .role-yama {
+      background: linear-gradient(145deg, var(--col-yama-start), var(--col-yama-end));
+      color: var(--col-yama-text);
+      border: 1px solid rgba(255, 0, 0, 0.4);
+      box-shadow: 0 0 15px rgba(255, 0, 0, 0.5);
+      font-weight: 900;
+      animation: yamaGlow 1.5s ease-in-out infinite alternate;
+    }
+
     .role-member {
       background: rgba(255, 77, 77, 0.05);
       color: var(--col-member);
@@ -275,7 +298,7 @@
   <header>
     <div class="logo">CLAN RULES</div>
     <div class="controls">
-      <input id="search" class="search" placeholder="Search members...">
+      <input id="search" class="search" placeholder="Search members by username...">
       <button id="refresh" class="btn-refresh" title="Refresh Data">↻</button>
     </div>
   </header>
@@ -316,22 +339,26 @@
       role_admin: 'ADMIN',
       role_member: 'MEMBER',
       role_developer: 'DEVELOPER',
-      role_girlfriend: 'GIRLFRIEND ❤️', 
+      role_girlfriend: 'GIRLFRIEND ❤️',
+      role_yama: 'YAMA', // New custom role text
       role_unknown: 'UNKNOWN',
     };
     
+    // Define the custom role usernames
+    const DEVELOPER_USERNAME = 'omk8sus';
+    const GIRLFRIEND_USERNAME = 'jana20_0666'; 
+    const YAMA_TARGET_USERNAME = 'b20ns'; // User targeted for the YAMA role
+
     const roleOrder = {
       'OWNER': 1,
       'DEVELOPER': 2,    
-      'GIRLFRIEND': 3,   
-      'CO-OWNER': 4,
-      'ADMIN': 5,
-      'MEMBER': 6,
+      'GIRLFRIEND': 3,
+      'YAMA': 4, // YAMA custom role priority
+      'CO-OWNER': 5,
+      'ADMIN': 6,
+      'MEMBER': 7,
       'DEFAULT': 99
     };
-    
-    const DEVELOPER_USERNAME = 'omk8sus';
-    const GIRLFRIEND_USERNAME = 'jana20_0666'; 
     
     function updateUI(dataCount = 0, statusKey = 'status_initializing') {
       document.querySelector('.logo').textContent = textConstants.logo;
@@ -368,14 +395,22 @@
       const lowerUsername = username.toLowerCase();
       const s = (status || '').toLowerCase();
       
-      if (lowerUsername === DEVELOPER_USERNAME.toLowerCase()) {
+      // 1. Custom Role for YAMA
+      if (lowerUsername === YAMA_TARGET_USERNAME.toLowerCase()) {
+        roleClass = 'role-yama';
+        roleText = textConstants.role_yama;
+      }
+      // 2. Developer/Co-Owner Role
+      else if (lowerUsername === DEVELOPER_USERNAME.toLowerCase()) {
         roleClass = 'role-developer'; 
         roleText = `${textConstants.role_developer} | ${textConstants.role_coowner}`; 
       }
+      // 3. Girlfriend Role
       else if (lowerUsername === GIRLFRIEND_USERNAME.toLowerCase()) {
         roleClass = 'role-girlfriend';
         roleText = textConstants.role_girlfriend;
       }
+      // 4. Standard Roles from Spreadsheet
       else if (s.includes('owner') && !s.includes('co')) {
         roleClass = 'role-owner';
         roleText = textConstants.role_owner;
@@ -403,6 +438,9 @@
       const status = (user.status || '').toUpperCase();
       const username = user.username.toLowerCase();
 
+      // Priority check for YAMA
+      if (username === YAMA_TARGET_USERNAME.toLowerCase()) return roleOrder['YAMA'];
+      
       if (status.includes('OWNER') && !status.includes('CO')) return roleOrder['OWNER'];
       
       if (username === DEVELOPER_USERNAME.toLowerCase() || status.includes('DEVELOPER')) return roleOrder['DEVELOPER'];
@@ -475,10 +513,14 @@
       
       const roleData = getRoleData(user.status, user.username);
       
-      const showDot = roleData.class !== 'role-owner' && 
-                      roleData.class !== 'role-developer' && 
-                      roleData.class !== 'role-girlfriend' && 
-                      roleData.class !== 'role-co-owner'; 
+      // Determine if a status dot should be shown (not for the high-priority roles)
+      const isCustomRole = roleData.class === 'role-owner' || 
+                           roleData.class === 'role-developer' || 
+                           roleData.class === 'role-girlfriend' ||
+                           roleData.class === 'role-yama' ||
+                           roleData.class === 'role-co-owner';
+                           
+      const showDot = !isCustomRole;
       
       card.innerHTML = `
         <div class="card-content">
@@ -503,6 +545,7 @@
       const mainNameEl = card.querySelector('.username-main');
       const handleEl = card.querySelector('.username-handle');
 
+      
       (async () => {
         const robloxData = await fetchRobloxData(user.username);
         
