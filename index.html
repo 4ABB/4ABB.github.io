@@ -1,0 +1,581 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>RULES Member Viewer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  
+  <style>
+    :root{
+      --bg: #0a0a0c;
+      --card-bg: #141418;
+      --text-main: #ffffff;
+      --text-muted: #888899;
+      --accent: #00e6ff;
+      --font: 'Inter', sans-serif;
+      
+      --col-owner: #ffffff;
+      --col-coowner: #ff2a2a;
+      --col-admin: #00ffa3;
+      --col-member: #ff4d4d;
+      --col-default: #888;
+      --col-gf: #ff69b4; 
+      --col-developer: #00e6ff; 
+    }
+
+    *{box-sizing:border-box}
+    
+    body {
+      margin: 0;
+      background-color: var(--bg);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(0, 230, 255, 0.1) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(255, 42, 42, 0.08) 0px, transparent 50%);
+      font-family: var(--font);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      padding: 30px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      backdrop-filter: blur(10px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      background: rgba(10, 10, 12, 0.85);
+    }
+
+    .logo {
+      font-weight: 800;
+      font-size: 28px;
+      text-transform: uppercase;
+      letter-spacing: -1px;
+      background: linear-gradient(to right, #fff 20%, #555 40%, #fff 60%, #fff 80%);
+      background-size: 200% auto;
+      color: #fff;
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: shine 4s linear infinite;
+    }
+
+    @keyframes shine { to { background-position: 200% center; } }
+
+    .controls { display: flex; gap: 10px; }
+
+    .search {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      padding: 10px 16px;
+      border-radius: 8px;
+      color: #fff;
+      font-family: var(--font);
+      outline: none;
+      transition: 0.2s;
+      width: 250px;
+    }
+    .search:focus {
+      border-color: var(--accent);
+      background: rgba(255,255,255,0.08);
+    }
+
+    .btn-refresh {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      cursor: pointer;
+      padding: 0 14px;
+      border-radius: 8px;
+      font-size: 18px;
+      transition: 0.2s;
+      color: #fff;
+    }
+    .btn-refresh:hover { background: rgba(255,255,255,0.1); }
+
+    .container {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 40px;
+      width: 100%;
+      flex: 1;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr); 
+      gap: 20px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 16px;
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      opacity: 0;
+      transform: translateY(20px);
+    }
+
+    .card.loaded {
+      opacity: 1;
+      transform: translateY(0);
+      transition: opacity 0.4s ease-out, transform 0.4s ease-out;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+      border-color: rgba(255,255,255,0.15);
+      z-index: 10;
+    }
+    
+    .user-text {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .username-main {
+      font-size: 18px;
+      font-weight: 800;
+      margin: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.2;
+      color: #fff; 
+    }
+
+    .username-handle {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-top: 2px;
+      display: block; 
+    }
+
+    .discord-row {
+      font-size: 12px;
+      color: #888899;
+      margin-top: 4px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .badge-container {
+      margin-top: auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 15px;
+      border-top: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .status-badge {
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+      box-shadow: 0 0 8px currentColor;
+    }
+
+    .role-owner {
+      background: linear-gradient(145deg, #222, #000);
+      color: var(--col-owner);
+      border: 1px solid #444;
+    }
+    
+    .role-co-owner {
+      background: #ffffff; 
+      color: #000000;      
+      border: 1px solid #000000; 
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+    }
+    
+    .role-developer {
+      background: #ffffff; 
+      color: #000000;      
+      border: 1px solid #000000;
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+    }
+    
+    .role-admin {
+      background: rgba(0, 255, 163, 0.1);
+      color: var(--col-admin);
+      border: 1px solid rgba(0, 255, 163, 0.3);
+    }
+    .role-girlfriend {
+      background: rgba(255, 105, 180, 0.15);
+      color: var(--col-gf);
+      border: 1px solid var(--col-gf);
+      box-shadow: 0 0 15px rgba(255, 105, 180, 0.3);
+      font-style: italic;
+      font-weight: 900;
+    }
+    .role-member {
+      background: rgba(255, 77, 77, 0.05);
+      color: var(--col-member);
+      border: 1px solid rgba(255, 77, 77, 0.1);
+    }
+    .role-default {
+      background: rgba(255,255,255,0.05);
+      color: #888;
+    }
+
+    .index-tag {
+      font-size: 11px;
+      color: rgba(255,255,255,0.15);
+    }
+
+    footer {
+      text-align: center;
+      padding: 30px;
+      color: rgba(255,255,255,0.2);
+      font-size: 12px;
+    }
+
+    @media (max-width: 1200px) { .grid { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 900px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 600px) { 
+      .grid { grid-template-columns: 1fr; }
+      header { flex-direction: column; gap: 15px; align-items: stretch; }
+      .search { width: 100%; }
+      .container { padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo">CLAN RULES</div>
+    <div class="controls">
+      <input id="search" class="search" placeholder="Search members...">
+      <button id="refresh" class="btn-refresh" title="Refresh Data">↻</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <div id="status-bar" style="margin-bottom: 20px; font-size: 14px; color: var(--text-muted);">Initializing system...</div>
+    <div id="grid" class="grid"></div>
+  </main>
+
+  <footer>
+    <span id="footer-text">Live Data from Google Sheets • Auto-updates every 2 minutes</span>
+  </footer>
+
+  <script>
+    const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSRmKX-OI6kZ75ImyMHjMhIIadZAC3GeE3U_rDXAt8X8EUQluD4eslnMC2Z5b8NA8P3DSl4zB104Nhp/pub?output=csv';
+    const grid = document.getElementById('grid');
+    const statusBar = document.getElementById('status-bar');
+    const searchInput = document.getElementById('search');
+    const refreshBtn = document.getElementById('refresh');
+    const footerText = document.getElementById('footer-text');
+
+    let allData = [];
+
+    const PROXY = 'https://corsproxy.io/?'; 
+
+    const textConstants = {
+      logo: 'RULES Members',
+      search_placeholder: 'Search members by usernmae...',
+      status_initializing: 'Initializing system...',
+      status_loading: 'Loading list...',
+      status_roster: 'Active Roster: ${count} members', 
+      status_error: 'Error loading data. Check console.',
+      footer: 'Made With Heart By AKAZA or ASSASSIN • Auto-updates every 2 minutes',
+      no_members: 'No members found matching your search.',
+      discord_label: 'Discord:',
+      role_owner: 'OWNER',
+      role_coowner: 'CO-OWNER',
+      role_admin: 'ADMIN',
+      role_member: 'MEMBER',
+      role_developer: 'DEVELOPER',
+      role_girlfriend: 'GIRLFRIEND ❤️', 
+      role_unknown: 'UNKNOWN',
+    };
+    
+    const roleOrder = {
+      'OWNER': 1,
+      'DEVELOPER': 2,    
+      'GIRLFRIEND': 3,   
+      'CO-OWNER': 4,
+      'ADMIN': 5,
+      'MEMBER': 6,
+      'DEFAULT': 99
+    };
+    
+    const DEVELOPER_USERNAME = 'omk8sus';
+    const GIRLFRIEND_USERNAME = 'jana20_0666'; 
+    
+    function updateUI(dataCount = 0, statusKey = 'status_initializing') {
+      document.querySelector('.logo').textContent = textConstants.logo;
+      searchInput.setAttribute('placeholder', textConstants.search_placeholder);
+      
+      let statusMessage = textConstants[statusKey];
+      if (statusKey === 'status_roster') {
+        statusMessage = statusMessage.replace('${count}', dataCount);
+      }
+      statusBar.textContent = statusMessage;
+      footerText.textContent = textConstants.footer;
+    }
+
+    function parseCSV(text) {
+      const lines = text.split('\n').filter(l => l.trim() !== '');
+      const data = [];
+      for(let i=1; i<lines.length; i++) {
+        const parts = lines[i].split(',').map(p => p.trim().replace(/^"|"$/g, ''));
+        if(parts[0]) {
+          data.push({
+            username: parts[0],
+            discord: parts[2] || '', 
+            status: parts[3] || 'Member', 
+          });
+        }
+      }
+      return data;
+    }
+    
+    function getRoleData(status, username) {
+      let roleClass = 'role-default';
+      let roleText = status || textConstants.role_unknown;
+      
+      const lowerUsername = username.toLowerCase();
+      const s = (status || '').toLowerCase();
+      
+      if (lowerUsername === DEVELOPER_USERNAME.toLowerCase()) {
+        roleClass = 'role-developer'; 
+        roleText = `${textConstants.role_developer} | ${textConstants.role_coowner}`; 
+      }
+      else if (lowerUsername === GIRLFRIEND_USERNAME.toLowerCase()) {
+        roleClass = 'role-girlfriend';
+        roleText = textConstants.role_girlfriend;
+      }
+      else if (s.includes('owner') && !s.includes('co')) {
+        roleClass = 'role-owner';
+        roleText = textConstants.role_owner;
+      }
+      else if (s.includes('co-owner')) {
+        roleClass = 'role-co-owner';
+        roleText = textConstants.role_coowner;
+      }
+      else if (s.includes('admin') && !s.includes('member') && !s.includes('trainee')) {
+        roleClass = 'role-admin';
+        roleText = textConstants.role_admin;
+      }
+      else if (s.includes('member') || s.includes('in') || s.includes('trainee')) {
+        roleClass = 'role-member';
+        roleText = textConstants.role_member;
+      }
+      
+      return { 
+        class: roleClass, 
+        text: roleText.toUpperCase() 
+      };
+    }
+    
+    function getRolePriority(user) {
+      const status = (user.status || '').toUpperCase();
+      const username = user.username.toLowerCase();
+
+      if (status.includes('OWNER') && !status.includes('CO')) return roleOrder['OWNER'];
+      
+      if (username === DEVELOPER_USERNAME.toLowerCase() || status.includes('DEVELOPER')) return roleOrder['DEVELOPER'];
+      
+      if (username === GIRLFRIEND_USERNAME.toLowerCase()) return roleOrder['GIRLFRIEND'];
+      
+      if (status.includes('CO-OWNER')) return roleOrder['CO-OWNER'];
+      
+      if (status.includes('ADMIN')) return roleOrder['ADMIN'];
+      
+      if (status.includes('MEMBER') || status.includes('IN')) return roleOrder['MEMBER'];
+      
+      return roleOrder['DEFAULT'];
+    }
+
+    function sortByRole(a, b) {
+      const priorityA = getRolePriority(a);
+      const priorityB = getRolePriority(b);
+
+      if (priorityA < priorityB) return -1;
+      if (priorityA > priorityB) return 1;
+      return a.username.localeCompare(b.username);
+    }
+    
+    async function fetchRobloxData(username) {
+        const idUrl = `${PROXY}https://users.roblox.com/v1/usernames/users`;
+        const idPayload = { usernames: [username] };
+        
+        const maxRetries = 3;
+        for (let attempt = 0; attempt < maxRetries; attempt++) {
+            try {
+                const idResponse = await fetch(idUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(idPayload)
+                });
+
+                if (!idResponse.ok) throw new Error(`Roblox ID lookup failed: ${idResponse.status}`);
+                
+                const idData = await idResponse.json();
+                const userId = idData.data?.[0]?.id;
+
+                if (!userId) {
+                    return { displayName: null };
+                }
+
+                const userDetailsUrl = `${PROXY}https://users.roblox.com/v1/users/${userId}`;
+                const detailsResponse = await fetch(userDetailsUrl);
+
+                if (!detailsResponse.ok) throw new Error(`Roblox User details failed: ${detailsResponse.status}`);
+                
+                const detailsData = await detailsResponse.json();
+                const displayName = detailsData.displayName || null; 
+
+                return { displayName: displayName };
+
+            } catch (e) {
+                if (attempt === maxRetries - 1) {
+                    console.error(`CORS Proxy failed to fetch Roblox data for ${username} after ${maxRetries} attempts.`, e);
+                    return { displayName: null };
+                }
+                await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
+            }
+        }
+    }
+
+    function createCard(user, index) {
+      const card = document.createElement('div');
+      card.className = 'card';
+      
+      const roleData = getRoleData(user.status, user.username);
+      
+      const showDot = roleData.class !== 'role-owner' && 
+                      roleData.class !== 'role-developer' && 
+                      roleData.class !== 'role-girlfriend' && 
+                      roleData.class !== 'role-co-owner'; 
+      
+      card.innerHTML = `
+        <div class="card-content">
+          <div class="user-text">
+            <h3 class="username-main">${user.username}</h3>
+            <div class="username-handle"></div>
+            <div class="discord-row">
+              <span>${textConstants.discord_label}</span> ${user.discord || '—'}
+            </div>
+          </div>
+        </div>
+
+        <div class="badge-container">
+          <div class="status-badge ${roleData.class}">
+            ${showDot ? '<span class="status-dot"></span>' : ''}
+            ${roleData.text}
+          </div>
+          <div class="index-tag">#${index + 1}</div>
+        </div>
+      `;
+      
+      const mainNameEl = card.querySelector('.username-main');
+      const handleEl = card.querySelector('.username-handle');
+
+      (async () => {
+        const robloxData = await fetchRobloxData(user.username);
+        
+        if (robloxData.displayName && robloxData.displayName.toLowerCase() !== user.username.toLowerCase()) {
+          mainNameEl.textContent = robloxData.displayName;
+          handleEl.textContent = `@${user.username}`; 
+          handleEl.style.display = 'block';
+        } else {
+          handleEl.style.display = 'none'; 
+          mainNameEl.textContent = user.username;
+        }
+      })();
+
+
+      return card;
+    }
+
+    function render(data) {
+      grid.innerHTML = '';
+
+      if(data.length === 0) {
+        grid.innerHTML = `<div style="grid-column: 1/-1; text-align:center; color:#555; margin-top:40px">${textConstants.no_members}</div>`;
+        return;
+      }
+      
+      data.forEach((user, idx) => {
+        const card = createCard(user, idx);
+        grid.appendChild(card);
+        setTimeout(() => {
+          card.classList.add('loaded');
+        }, idx * 75);
+      });
+    }
+
+    async function loadData() {
+      refreshBtn.style.transform = 'rotate(360deg)';
+      updateUI(0, 'status_loading');
+      
+      try {
+        const res = await fetch(csvUrl);
+        if(!res.ok) throw new Error('CSV Fail');
+        const text = await res.text();
+        allData = parseCSV(text);
+        
+        allData.sort(sortByRole); 
+        
+        render(allData);
+        updateUI(allData.length, 'status_roster');
+        
+        setTimeout(() => refreshBtn.style.transform = 'none', 500);
+
+      } catch (e) {
+        console.error(e);
+        updateUI(0, 'status_error');
+      }
+    }
+
+    searchInput.addEventListener('input', (e) => {
+      const term = e.target.value.toLowerCase();
+      const filtered = allData.filter(u => 
+        u.username.toLowerCase().includes(term) || 
+        u.status.toLowerCase().includes(term)
+      );
+      filtered.sort(sortByRole);
+      render(filtered);
+    });
+
+    refreshBtn.addEventListener('click', loadData);
+    
+    updateUI(0, 'status_initializing');
+    loadData();
+    setInterval(loadData, 120000); 
+
+  </script>
+</body>
+</html>
