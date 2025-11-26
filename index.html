@@ -1,5 +1,3 @@
-
-
 <!doctype html> 
 <html lang="en">
 <head>
@@ -10,9 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
   
-
-  
-  <style> /* shitting in my api is useless */
+  <style>
     :root{
       --bg: #0a0a0c;
       --card-bg: #141418;
@@ -40,6 +36,10 @@
       from { text-shadow: 0 0 3px var(--col-yama-text), 0 0 6px rgba(255, 0, 0, 0.5); }
       to { text-shadow: 0 0 6px var(--col-yama-text), 0 0 12px rgba(255, 0, 0, 0.8); }
     }
+    
+    @keyframes spinner {
+      to { transform: rotate(360deg); }
+    }
 
     *{box-sizing:border-box}
     
@@ -54,8 +54,126 @@
       min-height: 100vh;
       display: flex;
       flex-direction: column;
+      
     }
 
+    
+    #loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 2000; 
+      opacity: 1;
+      transition: opacity 0.4s ease-out;
+    }
+    
+    #loading-overlay.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+    
+    .spinner {
+      border: 4px solid rgba(255, 255, 255, 0.2);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spinner 0.8s linear infinite;
+      margin-bottom: 15px;
+    }
+    
+    .loading-text {
+        color: var(--text-muted);
+        font-size: 14px;
+    }
+
+    
+    #modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.9);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      display: none; 
+      opacity: 0;
+      transition: opacity 0.3s ease-out;
+    }
+
+    #modal-overlay.visible {
+      display: flex;
+      opacity: 1;
+    }
+
+    .modal-content {
+      background: var(--card-bg);
+      border: 1px solid var(--accent);
+      border-radius: 16px;
+      padding: 30px;
+      max-width: 400px;
+      width: 90%;
+      box-shadow: 0 10px 30px rgba(0, 230, 255, 0.3);
+      transform: scale(0.95);
+      opacity: 0;
+      transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+    }
+
+    #modal-overlay.visible .modal-content {
+      transform: scale(1);
+      opacity: 1;
+    }
+
+    .modal-content h3 {
+      margin-top: 0;
+      color: var(--accent);
+      font-size: 20px;
+      font-weight: 800;
+      border-bottom: 2px solid rgba(0, 230, 255, 0.2);
+      padding-bottom: 10px;
+      margin-bottom: 15px;
+    }
+
+    .modal-content p {
+      font-size: 14px;
+      color: var(--text-main);
+      white-space: pre-wrap;
+      margin-bottom: 20px;
+    }
+
+    #modal-okay-btn {
+      display: block;
+      width: 100%;
+      padding: 12px;
+      background: var(--accent);
+      color: var(--bg);
+      border: none;
+      border-radius: 8px;
+      font-weight: 800;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    #modal-okay-btn:hover {
+      background: #33ffff;
+    }
+    #modal-okay-btn:active {
+      transform: scale(0.98);
+    }
+   
+    
+   
     header {
       padding: 30px 40px;
       display: flex;
@@ -220,7 +338,7 @@
       box-shadow: 0 0 8px currentColor;
     }
 
-    /* Standard Roles */
+    
     .role-owner {
       background: linear-gradient(145deg, #222, #000);
       color: var(--col-owner);
@@ -229,14 +347,14 @@
     
     .role-co-owner {
       background: #ffffff; 
-      color: #000000;      
+      color: #000000;       
       border: 1px solid #000000; 
       box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
     }
     
     .role-developer {
       background: #ffffff; 
-      color: #000000;      
+      color: #000000;       
       border: 1px solid #000000;
       box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
     }
@@ -255,7 +373,7 @@
       font-weight: 900;
     }
 
-    /* Custom YAMA Role Styling */
+   
     .role-yama {
       background: linear-gradient(145deg, var(--col-yama-start), var(--col-yama-end));
       color: var(--col-yama-text);
@@ -298,6 +416,22 @@
   </style>
 </head>
 <body>
+  
+ 
+  <div id="loading-overlay">
+    <div class="spinner"></div>
+    <div class="loading-text">Loading member data...</div>
+  </div>
+
+  
+  <div id="modal-overlay">
+    <div class="modal-content">
+      <h3>DEVELOPER MESSAGE</h3>
+      <p id="modal-message"></p>
+      <button id="modal-okay-btn">Okay</button>
+    </div>
+  </div>
+  
 
   <header>
     <div class="logo">CLAN RULES</div>
@@ -323,8 +457,13 @@
     const searchInput = document.getElementById('search');
     const refreshBtn = document.getElementById('refresh');
     const footerText = document.getElementById('footer-text');
+    const modalOverlay = document.getElementById('modal-overlay');
+    const modalMessage = document.getElementById('modal-message');
+    const modalOkayBtn = document.getElementById('modal-okay-btn');
+    const loadingOverlay = document.getElementById('loading-overlay'); 
 
     let allData = [];
+    let autoRefreshInterval = null;
 
     const PROXY = 'https://corsproxy.io/?'; 
 
@@ -355,9 +494,9 @@
 
     const roleOrder = {
       'OWNER': 1,
-      'DEVELOPER': 2,    
+      'DEVELOPER': 2,   
       'JANO': 3,      
-      'YAMA': 4, 
+      'YAMA': 4,
       'CO-OWNER': 5,
       'ADMIN': 6,
       'MEMBER': 7,
@@ -376,11 +515,27 @@
       footerText.textContent = textConstants.footer;
     }
 
+    function hideLoadingScreen() {
+        loadingOverlay.classList.add('hidden');
+        
+        setTimeout(() => {
+            if (loadingOverlay.parentNode) {
+                loadingOverlay.parentNode.removeChild(loadingOverlay);
+            }
+        }, 400);
+    }
+    
+    
+    function safeCSVSplit(line) {
+        return line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(p => p.trim().replace(/^"|"$/g, ''));
+    }
+
     function parseCSV(text) {
       const lines = text.split('\n').filter(l => l.trim() !== '');
       const data = [];
       for(let i=1; i<lines.length; i++) {
-        const parts = lines[i].split(',').map(p => p.trim().replace(/^"|"$/g, ''));
+        
+        const parts = safeCSVSplit(lines[i]);
         if(parts[0]) {
           data.push({
             username: parts[0],
@@ -390,6 +545,20 @@
         }
       }
       return data;
+    }
+
+   
+    function extractMessage(text) {
+        const lines = text.split('\n');
+        
+        if (lines.length > 1) { 
+            const parts = safeCSVSplit(lines[1]);
+            
+            if (parts.length > 4) { 
+                return parts[4].trim() || ''; 
+            }
+        }
+        return '';
     }
     
     function getRoleData(status, username) {
@@ -519,11 +688,11 @@
       
       
       const isCustomRole = roleData.class === 'role-owner' || 
-                           roleData.class === 'role-developer' || 
-                           roleData.class === 'role-jano' ||  
-                           roleData.class === 'role-yama' ||
-                           roleData.class === 'role-co-owner';
-                           
+                             roleData.class === 'role-developer' || 
+                             roleData.class === 'role-jano' ||  
+                             roleData.class === 'role-yama' ||
+                             roleData.class === 'role-co-owner';
+                             
       const showDot = !isCustomRole;
       
       card.innerHTML = `
@@ -584,7 +753,11 @@
       });
     }
 
+   
     async function loadData() {
+      
+      if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+      
       refreshBtn.style.transform = 'rotate(360deg)';
       updateUI(0, 'status_loading');
       
@@ -592,6 +765,7 @@
         const res = await fetch(csvUrl);
         if(!res.ok) throw new Error('CSV Fail');
         const text = await res.text();
+        
         allData = parseCSV(text);
         
         allData.sort(sortByRole); 
@@ -601,11 +775,64 @@
         
         setTimeout(() => refreshBtn.style.transform = 'none', 500);
 
+       
+        autoRefreshInterval = setInterval(loadData, 120000);
+
       } catch (e) {
-        console.error(e);
+        console.error("Error loading main data:", e);
         updateUI(0, 'status_error');
+        setTimeout(() => refreshBtn.style.transform = 'none', 500);
       }
     }
+
+    async function initializePage() {
+      console.log("Starting page initialization...");
+      updateUI(0, 'status_initializing');
+      
+      try {
+        const res = await fetch(csvUrl);
+        if(!res.ok) throw new Error('CSV Fail');
+        const text = await res.text();
+
+        const message = extractMessage(text);
+        
+        if (message.trim() !== '') {
+          console.log("Message found, showing modal.");
+          
+          modalMessage.textContent = message;
+          modalOverlay.classList.add('visible');
+          hideLoadingScreen(); 
+          
+          
+          modalOkayBtn.addEventListener('click', () => {
+            console.log("Okay clicked, dismissing modal and loading content.");
+            modalOverlay.classList.remove('visible');
+            
+            
+            setTimeout(() => {
+                modalOverlay.style.display = 'none'; 
+                loadData(); 
+            }, 300); 
+            
+          }, { once: true }); 
+
+        } else {
+          console.log("No message found in E2, loading content immediately.");
+         
+          modalOverlay.style.display = 'none';
+          hideLoadingScreen(); 
+          loadData();
+        }
+
+      } catch (e) {
+       
+        console.error("Critical error during initial data fetch for message check. Loading content immediately anyway.", e);
+        modalOverlay.style.display = 'none';
+        hideLoadingScreen(); 
+        loadData();
+      }
+    }
+
 
     searchInput.addEventListener('input', (e) => {
       const term = e.target.value.toLowerCase();
@@ -619,11 +846,9 @@
 
     refreshBtn.addEventListener('click', loadData);
     
-    updateUI(0, 'status_initializing');
-    loadData();
-    setInterval(loadData, 120000); 
+   
+    initializePage(); 
 
   </script>
 </body>
 </html>
-
