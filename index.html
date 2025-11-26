@@ -1,4 +1,6 @@
-<!doctype html>
+
+
+<!doctype html> 
 <html lang="en">
 <head>
   <meta charset="utf-8" />
@@ -8,13 +10,15 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
   
-  <style>
+
+  
+  <style> /* shitting in my api is useless */
     :root{
       --bg: #0a0a0c;
       --card-bg: #141418;
       --text-main: #ffffff;
       --text-muted: #888899;
-      --accent: #00e6ff;
+      --accent: #00e6ff; 
       --font: 'Inter', sans-serif;
       
       --col-owner: #ffffff;
@@ -242,7 +246,7 @@
       color: var(--col-admin);
       border: 1px solid rgba(0, 255, 163, 0.3);
     }
-    .role-girlfriend {
+    .role-jano {
       background: rgba(255, 105, 180, 0.15);
       color: var(--col-gf);
       border: 1px solid var(--col-gf);
@@ -339,21 +343,21 @@
       role_admin: 'ADMIN',
       role_member: 'MEMBER',
       role_developer: 'DEVELOPER',
-      role_girlfriend: 'GIRLFRIEND ❤️',
-      role_yama: 'YAMA', // New custom role text
+      role_jano: 'JANO ❤️',   
+      role_yama: 'YAMA',
       role_unknown: 'UNKNOWN',
     };
     
-    // Define the custom role usernames
+    
     const DEVELOPER_USERNAME = 'omk8sus';
-    const GIRLFRIEND_USERNAME = 'jana20_0666'; 
-    const YAMA_TARGET_USERNAME = 'b20ns'; // User targeted for the YAMA role
+    const JANO_USERNAME = 'jana20_0666'; 
+    const YAMA_TARGET_USERNAME = 'b20ns'; 
 
     const roleOrder = {
       'OWNER': 1,
       'DEVELOPER': 2,    
-      'GIRLFRIEND': 3,
-      'YAMA': 4, // YAMA custom role priority
+      'JANO': 3,      
+      'YAMA': 4, 
       'CO-OWNER': 5,
       'ADMIN': 6,
       'MEMBER': 7,
@@ -395,22 +399,22 @@
       const lowerUsername = username.toLowerCase();
       const s = (status || '').toLowerCase();
       
-      // 1. Custom Role for YAMA
+      
       if (lowerUsername === YAMA_TARGET_USERNAME.toLowerCase()) {
         roleClass = 'role-yama';
         roleText = textConstants.role_yama;
       }
-      // 2. Developer/Co-Owner Role
+      
       else if (lowerUsername === DEVELOPER_USERNAME.toLowerCase()) {
         roleClass = 'role-developer'; 
         roleText = `${textConstants.role_developer} | ${textConstants.role_coowner}`; 
       }
-      // 3. Girlfriend Role
-      else if (lowerUsername === GIRLFRIEND_USERNAME.toLowerCase()) {
-        roleClass = 'role-girlfriend';
-        roleText = textConstants.role_girlfriend;
+      
+      else if (lowerUsername === JANO_USERNAME.toLowerCase()) {
+        roleClass = 'role-jano';
+        roleText = textConstants.role_jano;
       }
-      // 4. Standard Roles from Spreadsheet
+      
       else if (s.includes('owner') && !s.includes('co')) {
         roleClass = 'role-owner';
         roleText = textConstants.role_owner;
@@ -438,14 +442,14 @@
       const status = (user.status || '').toUpperCase();
       const username = user.username.toLowerCase();
 
-      // Priority check for YAMA
+      
       if (username === YAMA_TARGET_USERNAME.toLowerCase()) return roleOrder['YAMA'];
       
       if (status.includes('OWNER') && !status.includes('CO')) return roleOrder['OWNER'];
       
       if (username === DEVELOPER_USERNAME.toLowerCase() || status.includes('DEVELOPER')) return roleOrder['DEVELOPER'];
       
-      if (username === GIRLFRIEND_USERNAME.toLowerCase()) return roleOrder['GIRLFRIEND'];
+      if (username === JANO_USERNAME.toLowerCase()) return roleOrder['JANO']; 
       
       if (status.includes('CO-OWNER')) return roleOrder['CO-OWNER'];
       
@@ -513,10 +517,10 @@
       
       const roleData = getRoleData(user.status, user.username);
       
-      // Determine if a status dot should be shown (not for the high-priority roles)
+      
       const isCustomRole = roleData.class === 'role-owner' || 
                            roleData.class === 'role-developer' || 
-                           roleData.class === 'role-girlfriend' ||
+                           roleData.class === 'role-jano' ||  
                            roleData.class === 'role-yama' ||
                            roleData.class === 'role-co-owner';
                            
